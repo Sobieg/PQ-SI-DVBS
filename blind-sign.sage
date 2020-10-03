@@ -72,14 +72,14 @@ def gen_supersingularEC(p, ls, e):
 def gen_base_point(E, l, e):
     N=E.cardinality()
     F=E.base_field()
-    PP=E.random_point()
     # try:        
     c=ZZ(N/(l^e)^2)   
-    P=c*PP   
-    checkP=ZZ(l^e)*P
-    if checkP[0]==0 and checkP[2]==0:        
-        PA=P
-        return PA
+    while True:
+        PP=E.random_point()
+        P=c*PP   
+        if P.order() == l^e:        
+            PA=P
+            return PA
     return None
 
 def gen_bases(E, l, e):
@@ -145,7 +145,12 @@ def KeyGen(EK, ls, es, P_r, Q_r, P_s, Q_s, P_v, Q_v, P_m, Q_m):
 
 
 def Blind(m, l_m, e_m, l_r, e_r, E_v, phi_v_Pr, phi_v_Qr, phi_v_Ps, phi_v_Qs, phi_v_Pm, phi_v_Qm):
+
+    l_re = l_r^e_r
+
+
     hm = myhash(m, l_m^e_m)
+    # print("HASH: ", hm)
 
 
     phiVM = EllipticCurveIsogeny(E_v, phi_v_Pm + hm * phi_v_Qm)
@@ -156,6 +161,7 @@ def Blind(m, l_m, e_m, l_r, e_r, E_v, phi_v_Pr, phi_v_Qr, phi_v_Ps, phi_v_Qs, ph
     phi_vm_phi_v_Qr = phiVM(phi_v_Qr)
     phi_vm_phi_v_Ps = phiVM(phi_v_Ps)
     phi_vm_phi_v_Qs = phiVM(phi_v_Qs)
+
 
     
     phiVMR = EllipticCurveIsogeny(E_vm, phi_vm_phi_v_Pr + r * phi_vm_phi_v_Qr)
@@ -196,8 +202,70 @@ def Blind(m, l_m, e_m, l_r, e_r, E_v, phi_v_Pr, phi_v_Qr, phi_v_Ps, phi_v_Qs, ph
     #         continue
     #     else:
     #         break
+    K_v = gen_base_point(E_vm, l_r, e_r)
     while True:
-        
+        K_v = gen_base_point(E_vm, l_r, e_r)
+        # K_v = E_vm.random_point()
+        # print(K_v.order())
+        if K_v.order() != l_r^e_r:
+            continue
+        # print(K_v, end="")
+        if phiVMR(K_v).is_zero():
+            # print(" in ker")
+            continue
+        else:
+            break
+
+    # cyclic_kernel = []
+    # for i in range(K_v.order()):
+    #     # print(i*phiVMR(K_v))
+    #     cyclic_kernel.append(i*phiVMR(K_v))
+    
+    # print(len(cyclic_kernel))
+
+    phi_hat_VMR = EllipticCurveIsogeny(E_vmr, phiVMR(K_v))
+
+    # print(phi_hat_VMR, "js = ", phi_hat_VMR.codomain().j_invariant(), " ", phi_hat_VMR.domain().j_invariant())
+    # print(phiVMR, "js = ", phiVMR.codomain().j_invariant(), " ", phiVMR.domain().j_invariant())
+    # print(phiVMR.codomain() == phi_hat_VMR.domain())
+    # print(phi_hat_VMR.codomain() == phiVMR.domain())
+
+    E1 = phiVMR.codomain()
+    E2 = phi_hat_VMR.domain()
+    E3 = phi_hat_VMR.codomain()
+    E4 = phiVMR.domain()
+
+
+    j1 = E1.j_invariant()
+    j2 = E2.j_invariant()
+    j3 = E3.j_invariant()
+    j4 = E4.j_invariant()
+
+    # print("j1 = ", j1)
+    # print("j2 = ", j2)
+    # print("j3 = ", j3)
+    # print("j4 = ", j4)
+
+    if j3 != j4:
+        E3 = E3.quadratic_twist()
+        j3 = E3.j_invariant()
+
+    # print("new j3 = ", j3)
+
+    # tt = phiVMR.dual()
+    # print(tt)
+    
+
+
+
+    # print(E_vm.torsion_subgroup())
+
+
+    phiVMR_K_v = phiVMR(K_v)
+
+
+
+    while True:
         while True:
             P_hatch_r = gen_base_point(E_vmr, l_r, e_r)
             Q_hatch_r = gen_base_point(E_vmr, l_r, e_r)
@@ -205,31 +273,52 @@ def Blind(m, l_m, e_m, l_r, e_r, E_v, phi_v_Pr, phi_v_Qr, phi_v_Ps, phi_v_Qs, ph
             ee = P_hatch_r.weil_pairing(Q_hatch_r, ZZ(l_r^e_r))
             if ee^(l_r^e_r) == 1:
                 break
-        
-        m = randint(1, l_r^e_r)
-        n = randint(1, l_r^e_r)
-
-        phi_VMR_K = m*P_hatch_r + n * Q_hatch_r
-        
-
-        phi_hat_vmr = EllipticCurveIsogeny(E_vmr, phi_VMR_K)
-
-        K = gen_base_point(E_vm, l_r, e_r)
-        print(K.order(), l_r^e_r, phi_VMR_K.order(), phi_hat_vmr(phi_VMR_K).order())
-        if (K.order() != l_r^e_r):
-            continue
-        
-        # print(phi_hat_vmr(phi_VMR_K).order(), l_r^e_r, phi_hat_vmr(phi_VMR_K) )
-
-        if phi_hat_vmr(phi_VMR_K).order() == l_r^e_r:
-            K_v = phi_hat_vmr(phi_VMR_K) 
+        # print(P_hatch_r.order(), Q_hatch_r.order())
+        n = 0
+        m = 0
+        print(P_hatch_r, Q_hatch_r)
+        while True:
+            if m * P_hatch_r + n*Q_hatch_r == phiVMR_K_v:
+                break
+            m = m+1
+            # print(m, n)
+            if m > l_re:
+                m = 0
+                n = n+1
+                # print(".",end="")
+                if n>l_re:
+                    print("NOTHING")
+                    n = 0
+                    m = 0
+                    break
+        if n != 0 or m != 0:
             break
+        
+        
+    
+
+    print(n, m)
+    #     phi_VMR_K = m*P_hatch_r + n * Q_hatch_r
+        
+
+    #     phi_hat_vmr = EllipticCurveIsogeny(E_vmr, phi_VMR_K)
+
+    #     K = gen_base_point(E_vm, l_r, e_r)
+    #     print(K.order(), l_r^e_r, phi_VMR_K.order(), phi_hat_vmr(phi_VMR_K).order())
+    #     if (K.order() != l_r^e_r):
+    #         continue
+        
+    #     # print(phi_hat_vmr(phi_VMR_K).order(), l_r^e_r, phi_hat_vmr(phi_VMR_K) )
+
+    #     if phi_hat_vmr(phi_VMR_K).order() == l_r^e_r:
+    #         K_v = phi_hat_vmr(phi_VMR_K) 
+    #         break
 
 
 
 
 
-    return E_vmr, (P_hatch_r, Q_hatch_r), phi_vmr_phi_vm_phi_v_Ps, phi_vmr_phi_vm_phi_v_Qs, m, n
+    return E_vmr, (P_hatch_r, Q_hatch_r), phi_vmr_phi_vm_phi_v_Ps, phi_vmr_phi_vm_phi_v_Qs, m, n, phi_hat_VMR
 
 
 
@@ -244,9 +333,16 @@ def Sign(E_vmr, phi_vmr_phi_vm_phi_v_Ps, phi_vmr_phi_vm_phi_v_Qs, n_s, P_hatch_r
 
     return E_vmrs, phi_vmrs_P_hatch_r, phi_vmrs_Q_hatch_r
 
-def Unblind(E_vmrs, m, n, phi_vmrs_P_hatch_r, phi_vmrs_Q_hatch_r):
+def Unblind(E_vmrs, m, n, phi_vmrs_P_hatch_r, phi_vmrs_Q_hatch_r, phi_hat_vmr):
     phi_vmrsr_hatch = EllipticCurveIsogeny(E_vmrs, m*phi_vmrs_P_hatch_r + n * phi_vmrs_Q_hatch_r)
     E_vmrsr_hatch = phi_vmrsr_hatch.codomain()
+
+    print("DEBUG")
+    print("E_vmrsr_hatch_j", E_vmrsr_hatch.j_invariant())
+    print("E_vmrsr_hatch_twisted_j", E_vmrsr_hatch.quadratic_twist().j_invariant())
+
+
+    print("\n\n", phi_vmrsr_hatch ,"\n\n")
 
     return E_vmrsr_hatch.j_invariant()
 
@@ -254,6 +350,7 @@ def Unblind(E_vmrs, m, n, phi_vmrs_P_hatch_r, phi_vmrs_Q_hatch_r):
 def Verify(m, j_inv_E_vmrsr_hatch, l_m, e_m, E_s, phi_s_Pv, phi_s_Qv, phi_s_Pm, phi_s_Qm, n_v):
 
     hm = myhash(m, l_m^e_m)
+    print("HASH: ", hm)
 
 
     phi_sv = EllipticCurveIsogeny(E_s, phi_s_Pv + n_v*phi_s_Qv)
@@ -267,10 +364,15 @@ def Verify(m, j_inv_E_vmrsr_hatch, l_m, e_m, E_s, phi_s_Pv, phi_s_Qv, phi_s_Pm, 
 
     print("DEBHUUUUG")
     print("j_inv on ver: ", E_svm.j_invariant())
+    print("j_inv of quadratic_twist on ver: ", E_svm.quadratic_twist().j_invariant())
     print("exp: ", j_inv_E_vmrsr_hatch)
 
-    return j_inv_E_vmrsr_hatch == E_svm.j_invariant()
+    if j_inv_E_vmrsr_hatch == E_svm.j_invariant():
+        return True
+    elif j_inv_E_vmrsr_hatch == E_svm.quadratic_twist().j_invariant():
+        return True
 
+    return False
 
     
 
@@ -278,7 +380,7 @@ def Verify(m, j_inv_E_vmrsr_hatch, l_m, e_m, E_s, phi_s_Pv, phi_s_Qv, phi_s_Pm, 
 
 def main():
     l = [2,3,5,7]
-    lam = 4
+    lam = 32
 
 
     p, EK, (P_r, Q_r), (P_s, Q_s), (P_v, Q_v), (P_m, Q_m), e, f = Setup(l, lam)
@@ -290,14 +392,14 @@ def main():
     print("f = ", f)
     print("p = ", p)
     print("EK = ", EK) 
-    print("P_r = ", P_r)
-    print("Q_r = ", Q_r)
-    print("P_s = ", P_s)
-    print("Q_s = ", Q_s)
-    print("P_v = ", P_v)
-    print("Q_v = ", Q_v)
-    print("P_m = ", P_m)
-    print("Q_m = ", Q_m)
+    print("P_r = ", P_r, P_r.order())
+    print("Q_r = ", Q_r, Q_r.order())
+    print("P_s = ", P_s, P_s.order())
+    print("Q_s = ", Q_s, Q_s.order())
+    print("P_v = ", P_v, P_v.order())
+    print("Q_v = ", Q_v, Q_v.order())
+    print("P_m = ", P_m, P_m.order())
+    print("Q_m = ", Q_m, Q_m.order())
 
 
     ((pk_s, sk_s), (pk_v, sk_v)) = KeyGen(EK, l, e, P_r, Q_r, P_s, Q_s, P_v, Q_v, P_m, Q_m)
@@ -346,7 +448,7 @@ def main():
     mess = "Hello world"
     fake_mess = "Hello w0rld"
 
-    E_vmr, (P_hatch_r, Q_hatch_r), phi_vmr_phi_vm_phi_v_Ps, phi_vmr_phi_vm_phi_v_Qs, m, n = Blind(mess, l[3], e[3], l[0], e[0], E_v, phi_v_Pr, phi_v_Qr, phi_v_Ps, phi_v_Qs, phi_v_Pm, phi_v_Qm)
+    E_vmr, (P_hatch_r, Q_hatch_r), phi_vmr_phi_vm_phi_v_Ps, phi_vmr_phi_vm_phi_v_Qs, m, n, phi_hat_vmr = Blind(mess, l[3], e[3], l[0], e[0], E_v, phi_v_Pr, phi_v_Qr, phi_v_Ps, phi_v_Qs, phi_v_Pm, phi_v_Qm)
 
 
     print("========== SIGN ==========")
@@ -358,6 +460,7 @@ def main():
     print("phi_vmr_phi_vm_phi_v_Qs = ", phi_vmr_phi_vm_phi_v_Qs)
     print("m = ", m)
     print("n = ", n)
+    print("phi_hat_vmr = ", phi_hat_vmr)
 
     E_vmrs, phi_vmrs_P_hatch_r, phi_vmrs_Q_hatch_r = Sign(E_vmr, phi_vmr_phi_vm_phi_v_Ps, phi_vmr_phi_vm_phi_v_Qs, n_s, P_hatch_r, Q_hatch_r)
 
@@ -367,7 +470,7 @@ def main():
     print("phi_vmrs_Q'_r = ", phi_vmrs_Q_hatch_r)
 
 
-    j_inv_E_vmrsr_hatch = Unblind(E_vmrs, m, n, phi_vmrs_P_hatch_r, phi_vmrs_Q_hatch_r)
+    j_inv_E_vmrsr_hatch = Unblind(E_vmrs, m, n, phi_vmrs_P_hatch_r, phi_vmrs_Q_hatch_r, phi_hat_vmr)
 
     print("======= Unblinding =======")
     print("j_inv = ", j_inv_E_vmrsr_hatch)
