@@ -276,7 +276,7 @@ def Blind(m, l_m, e_m, l_r, e_r, E_v, phi_v_Pr, phi_v_Qr, phi_v_Ps, phi_v_Qs, ph
         # print(P_hatch_r.order(), Q_hatch_r.order())
         n = 0
         m = 0
-        print(P_hatch_r, Q_hatch_r)
+        # print(P_hatch_r, Q_hatch_r)
         while True:
             if m * P_hatch_r + n*Q_hatch_r == phiVMR_K_v:
                 break
@@ -337,12 +337,12 @@ def Unblind(E_vmrs, m, n, phi_vmrs_P_hatch_r, phi_vmrs_Q_hatch_r, phi_hat_vmr):
     phi_vmrsr_hatch = EllipticCurveIsogeny(E_vmrs, m*phi_vmrs_P_hatch_r + n * phi_vmrs_Q_hatch_r)
     E_vmrsr_hatch = phi_vmrsr_hatch.codomain()
 
-    print("DEBUG")
-    print("E_vmrsr_hatch_j", E_vmrsr_hatch.j_invariant())
-    print("E_vmrsr_hatch_twisted_j", E_vmrsr_hatch.quadratic_twist().j_invariant())
+    # print("DEBUG")
+    # print("E_vmrsr_hatch_j", E_vmrsr_hatch.j_invariant())
+    # print("E_vmrsr_hatch_twisted_j", E_vmrsr_hatch.quadratic_twist().j_invariant())
 
 
-    print("\n\n", phi_vmrsr_hatch ,"\n\n")
+    # print("\n\n", phi_vmrsr_hatch ,"\n\n")
 
     return E_vmrsr_hatch.j_invariant()
 
@@ -350,7 +350,7 @@ def Unblind(E_vmrs, m, n, phi_vmrs_P_hatch_r, phi_vmrs_Q_hatch_r, phi_hat_vmr):
 def Verify(m, j_inv_E_vmrsr_hatch, l_m, e_m, E_s, phi_s_Pv, phi_s_Qv, phi_s_Pm, phi_s_Qm, n_v):
 
     hm = myhash(m, l_m^e_m)
-    print("HASH: ", hm)
+    # print("HASH: ", hm)
 
 
     phi_sv = EllipticCurveIsogeny(E_s, phi_s_Pv + n_v*phi_s_Qv)
@@ -362,10 +362,10 @@ def Verify(m, j_inv_E_vmrsr_hatch, l_m, e_m, E_s, phi_s_Pv, phi_s_Qv, phi_s_Pm, 
     phi_svm = EllipticCurveIsogeny(E_sv, phi_sv_phi_s_Pm + hm * phi_sv_phi_s_Qm)
     E_svm = phi_svm.codomain()
 
-    print("DEBHUUUUG")
-    print("j_inv on ver: ", E_svm.j_invariant())
-    print("j_inv of quadratic_twist on ver: ", E_svm.quadratic_twist().j_invariant())
-    print("exp: ", j_inv_E_vmrsr_hatch)
+    # print("DEBHUUUUG")
+    # print("j_inv on ver: ", E_svm.j_invariant())
+    # print("j_inv of quadratic_twist on ver: ", E_svm.quadratic_twist().j_invariant())
+    # print("exp: ", j_inv_E_vmrsr_hatch)
 
     if j_inv_E_vmrsr_hatch == E_svm.j_invariant():
         return True
@@ -380,7 +380,7 @@ def Verify(m, j_inv_E_vmrsr_hatch, l_m, e_m, E_s, phi_s_Pv, phi_s_Qv, phi_s_Pm, 
 
 def main():
     l = [2,3,5,7]
-    lam = 32
+    lam = 4
 
 
     p, EK, (P_r, Q_r), (P_s, Q_s), (P_v, Q_v), (P_m, Q_m), e, f = Setup(l, lam)
@@ -392,14 +392,14 @@ def main():
     print("f = ", f)
     print("p = ", p)
     print("EK = ", EK) 
-    print("P_r = ", P_r, P_r.order())
-    print("Q_r = ", Q_r, Q_r.order())
-    print("P_s = ", P_s, P_s.order())
-    print("Q_s = ", Q_s, Q_s.order())
-    print("P_v = ", P_v, P_v.order())
-    print("Q_v = ", Q_v, Q_v.order())
-    print("P_m = ", P_m, P_m.order())
-    print("Q_m = ", Q_m, Q_m.order())
+    print("P_r = ", P_r)
+    print("Q_r = ", Q_r)
+    print("P_s = ", P_s)
+    print("Q_s = ", Q_s)
+    print("P_v = ", P_v)
+    print("Q_v = ", Q_v)
+    print("P_m = ", P_m)
+    print("Q_m = ", Q_m)
 
 
     ((pk_s, sk_s), (pk_v, sk_v)) = KeyGen(EK, l, e, P_r, Q_r, P_s, Q_s, P_v, Q_v, P_m, Q_m)
